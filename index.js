@@ -1,3 +1,6 @@
+/* Very Small SML */
+
+// Training Data ( small dataset )
 const text = [
   "Bonjour je suis un robot",
   "Un robot est une machine",
@@ -7,6 +10,7 @@ const text = [
 const vocab = [];
 const pairs = [];
 
+// Make the tokenizer and build pairs
 for (const line of text) {
 
   for (const word of line.split(' ')) {
@@ -24,6 +28,7 @@ for (const line of text) {
 }
 
 
+// Function for tokenize text
 function Tokenize(text) {
   const result = [];
   let text_parsed = text.split(' ');
@@ -37,5 +42,9 @@ function Tokenize(text) {
 }
 
 
+
+// Tokenize text
 const output = Tokenize("Bonjour je");
 console.log(output);
+
+
