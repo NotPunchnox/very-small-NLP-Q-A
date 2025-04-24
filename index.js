@@ -5,10 +5,11 @@ const text = [
 ];
 
 const vocab = [];
+const pairs = [];
 
 for (const line of text) {
 
-  for (const word of line) {
+  for (const word of line.split(' ')) {
     if (!Object.keys(vocab).includes(word)) {
 
       let object = { [vocab.length]: word }
@@ -17,6 +18,6 @@ for (const line of text) {
     }
   }
 
-  console.log(vocab)
-
 }
+
+console.log(vocab)
