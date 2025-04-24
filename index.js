@@ -25,3 +25,14 @@ for (const line of text) {
 
 console.log(vocab)
 console.log(pairs)
+
+function Tokenize(text) {
+  let text_parsed = text.split(' ');
+
+  for (const word of text_parsed) {
+    const token = vocab.find(a => a[Object.keys(a)[0]] == word);
+    console.log(word, ":", token)
+  }
+}
+
+Tokenize("Bonjour je")
