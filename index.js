@@ -14,10 +14,14 @@ for (const line of text) {
 
       let object = { [vocab.length]: word }
 
-      vocab.push(object)
+      vocab.push(object);
+      if (vocab.length % 2 == 0) {
+        pairs.push([Object.keys(object)[0] - 1, Object.keys(object)[0]])
+      }
     }
   }
 
 }
 
 console.log(vocab)
+console.log(pairs)
