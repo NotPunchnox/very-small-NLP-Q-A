@@ -41,10 +41,25 @@ function Tokenize(text) {
   return result;
 }
 
+// Function for decode tokenized text
+function Decode(tokens) {
+  const result = [];
+
+  for (const token of tokens) {
+    const word = vocab[token][token];
+    result.push(word);
+  }
+
+  return result;
+}
 
 
 // Tokenize text
 const output = Tokenize("Bonjour je");
 console.log(output);
+
+// Decode tokenized text
+const decoded_result = Decode(output);
+console.log("decoded result:", decoded_result);
 
 
