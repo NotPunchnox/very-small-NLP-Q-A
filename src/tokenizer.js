@@ -81,7 +81,7 @@ function Decode(tokens) {
   return result;
 }
 
-
+/*
 // Tokenize text
 const output = Tokenize("Bonjour je");
 console.log(output);
@@ -89,5 +89,7 @@ console.log(output);
 // Decode tokenized text
 const decoded_result = Decode(output);
 console.log("decoded result:", decoded_result);
+*/
 
 
+module.exports = { Tokenizer };
