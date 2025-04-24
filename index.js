@@ -23,8 +23,6 @@ for (const line of text) {
 
 }
 
-console.log(vocab)
-console.log(pairs)
 
 function Tokenize(text) {
   const result = [];
@@ -37,6 +35,7 @@ function Tokenize(text) {
 
   return result;
 }
+
 
 const output = Tokenize("Bonjour je");
 console.log(output);
