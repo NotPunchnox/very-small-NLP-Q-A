@@ -27,12 +27,16 @@ console.log(vocab)
 console.log(pairs)
 
 function Tokenize(text) {
+  const result = [];
   let text_parsed = text.split(' ');
 
   for (const word of text_parsed) {
-    const token = vocab.find(a => a[Object.keys(a)[0]] == word);
-    console.log(word, ":", token)
+    const token = Object.keys(vocab.find(a => a[Object.keys(a)[0]] == word))[0];
+    result.push(token);
   }
+
+  return result;
 }
 
-Tokenize("Bonjour je")
+const output = Tokenize("Bonjour je");
+console.log(output);
