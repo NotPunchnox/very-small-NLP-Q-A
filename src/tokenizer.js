@@ -9,8 +9,8 @@ const text = [
 
 class Tokenizer {
 
-  const vocab = [];
-  const pairs = [];
+  vocab = []
+  pairs = []
 
   constructor() {
 
@@ -22,13 +22,13 @@ class Tokenizer {
     for (const line of text) {
 
       for (const word of line.split(' ')) {
-        if (!Object.keys(vocab).includes(word)) {
-          let object = { [vocab.length]: word };
+        if (!Object.keys(this.vocab).includes(word)) {
+          let object = { [this.vocab.length]: word };
 
-          vocab.push(object);
+          this.vocab.push(object);
 
-          if (vocab.length % 2 == 0) {
-            pairs.push([Object.keys(object)[0] - 1, Object.keys(object)[0]]);
+          if (this.vocab.length % 2 == 0) {
+            this.pairs.push([Object.keys(object)[0] - 1, Object.keys(object)[0]]);
           }
         }
       }
@@ -36,50 +36,33 @@ class Tokenizer {
     }
 
   }
-}
 
-// Make the tokenizer and build pairs
-for (const line of text) {
+  static tokenize(text) {
+    const result = [];
+    let text_parsed = text.split(' ');
 
-  for (const word of line.split(' ')) {
-    if (!Object.keys(vocab).includes(word)) {
-
-      let object = { [vocab.length]: word }
-
-      vocab.push(object);
-      if (vocab.length % 2 == 0) {
-        pairs.push([Object.keys(object)[0] - 1, Object.keys(object)[0]])
-      }
+    for (const word of text_parsed) {
+      const token = Object.keys(vocab.find(a => a[Object.keys(a)[0] == word]))[0];
+      result.push(token);
     }
+
+    return result;
+  }
+
+  static decode(tokens) {
+    const result = [];
+
+    for (const token of tokens) {
+      const word = vocab[token][token];
+      result.push(word);
+    }
+
+    return result;
+
   }
 
 }
 
-
-// Function for tokenize text
-function Tokenize(text) {
-  const result = [];
-  let text_parsed = text.split(' ');
-
-  for (const word of text_parsed) {
-    const token = Object.keys(vocab.find(a => a[Object.keys(a)[0]] == word))[0];
-    result.push(token);
-  }
-
-  return result;
-}
-
-// Function for decode tokenized text
-function Decode(tokens) {
-  const result = [];
-
-  for (const token of tokens) {
-    const word = vocab[token][token];
-    result.push(word);
-  }
-
-  return result;
-}
 
 /*
 // Tokenize text
