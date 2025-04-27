@@ -20,11 +20,11 @@ for (let i = 0; i < epochs; i++) {
 }
 
 // Test du réseau
-/*
+
 console.log("Test XOR:");
 for (const data of trainingData) {
   const output = nn.forward(data.input);
   console.log(
     `Entrée: [${data.input}], Sortie: ${output.toFixed(4)}, Attendu: ${data.target}`
   );
-}*/
+}
