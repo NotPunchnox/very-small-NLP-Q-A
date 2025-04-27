@@ -17,15 +17,15 @@ class NeuralNetwork {
     ];
 
     // Initilisation des biais
-    this.biasHidden = [[Math.random() * 2 - 1, Math.random() * 2 - 1]],
-      this.biasHidden = [[Math.random() * 2 - 1]];
+    this.biasHidden = [[Math.random() * 2 - 1, Math.random() * 2 - 1]];
+    this.biasHidden = [[Math.random() * 2 - 1]];
 
     this.learningRate = 0.1;
 
   }
 
 
-  // Fonciton de propagation avant
+  // Fonction de propagation avant
   forward(inputs) {
 
     // Couche cachée
@@ -36,6 +36,9 @@ class NeuralNetwork {
       this.biasHidden
     );
     this.hidden = hiddenInput.map(row => row.map(math.sigmoid));
+
+    console.log("Hidden:", this.hidden, "\nweightsInputHidden:", this.weightsInputHidden);
+    console.log("Multiplication:", math.matrixMultiply(this.hidden, this.weightsInputHidden));
 
     let outputInput = math.matrixAdd(
       math.matrixMultiply(this.hidden, this.weightsInputHidden),
@@ -48,6 +51,9 @@ class NeuralNetwork {
 
 
   train(inputs, target) {
+
+    console.log(inputs, target)
+
     // Propagation avant
     this.forward(inputs);
 

@@ -24,6 +24,7 @@ function matrixMultiply(a, b) {
 }
 
 function matrixAdd(a, b) {
+  console.log("Matrix a:", a, "\nMatrix b:", b)
   return a.map((row, i) => row.map((val, j) => val + b[i][j]));
 }
 
