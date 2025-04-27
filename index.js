@@ -18,3 +18,9 @@ for (let epoch = 0; epoch < 100000; epoch++) {
     console.log(`Epoch ${epoch}, Average Loss: ${averageLoss}`);
   }
 }
+
+console.log("test XOR");
+for (const data of trainingData) {
+  let output = nn.forward(data.inputs);
+  console.log(`Inputs: ${data.inputs} | result: ${output} | Attendu: ${data.target}`);
+}
