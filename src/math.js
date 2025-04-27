@@ -6,7 +6,7 @@ function sigmoidDerivative(x) {
   return x * (1 - x);
 }
 
-function multiplicationMatrice(a, b) {
+function matrixMultiply(a, b) {
   const rowsA = a.length;
   const colsA = a[0].length;
   const rowsB = b.length;
