@@ -31,14 +31,14 @@ class NeuralNetwork {
     // Couche cachée
     this.input = [inputs];
 
-    let hiddenInput = matrixAdd(
+    let hiddenInput = math.matrixAdd(
       math.matrixMultiply(this.input, this.weightsInputHidden),
       this.biasHidden
     );
     this.hidden = hiddenInput.map(row => row.map(math.sigmoid));
 
-    let outputInput = matrixAdd(
-      matrixMultiply(this.hidden, this.weightsInputHidden),
+    let outputInput = math.matrixAdd(
+      math.matrixMultiply(this.hidden, this.weightsInputHidden),
       this.biasOutput
     );
     this.output = outputInput.map(row => row.map(math.sigmoid));

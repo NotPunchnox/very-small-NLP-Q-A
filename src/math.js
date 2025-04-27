@@ -23,7 +23,7 @@ function matrixMultiply(a, b) {
   }
 }
 
-function addMatrix(a, b) {
+function matrixAdd(a, b) {
   return a.map((row, i) => row.map((val, j) => val + b[i][j]));
 }
 
@@ -33,4 +33,14 @@ function matrixScalarMultiply(matrix, scalar) {
 
 function matrixTranspose(matrix) {
   return matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]));
+}
+
+
+module.exports = {
+  sigmoid,
+  sigmoidDerivative,
+  matrixMultiply,
+  matrixAdd,
+  matrixScalarMultiply,
+  matrixTranspose
 }

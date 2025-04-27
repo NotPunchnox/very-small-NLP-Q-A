@@ -1,3 +1,5 @@
+const NeuralNetwork = require('./neural-network');
+
 // Données d'entraînement XOR
 const trainingData = [
   { input: [0, 0], target: 0 },
