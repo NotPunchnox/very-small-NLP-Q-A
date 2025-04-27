@@ -20,7 +20,7 @@ class NeuralNetwork {
     this.biasHidden = [[Math.random() * 2 - 1, Math.random() * 2 - 1]];
     this.biasOutput = [[Math.random() * 2 - 1]];
 
-    this.learningRate = 0.1;
+    this.learningRate = 0.001;
 
   }
 
@@ -35,11 +35,8 @@ class NeuralNetwork {
       math.matrixMultiply(this.input, this.weightsInputHidden),
       this.biasHidden
     );
-    //console.log({ hiddenInput })
-    this.hidden = hiddenInput.map(row => row.map(math.sigmoid));
 
-    //console.log("Hidden:", this.hidden, "\nweightsInputHidden:", this.weightsInputHidden);
-    //console.log("Multiplication:", math.matrixMultiply(this.hidden, this.weightsInputHidden));
+    this.hidden = hiddenInput.map(row => row.map(math.sigmoid));
 
     let outputInput = math.matrixAdd(
       math.matrixMultiply(this.hidden, this.weightsInputHidden),
@@ -59,6 +56,8 @@ class NeuralNetwork {
     // Erreur de sortie
     const outputError = target - this.output[0][0];
     const outputDelta = outputError * math.sigmoidDerivative(this.output[0][0]);
+
+    console.log({ outputError, outputDelta })
 
     // Erreur de la couche cachée
     const hiddenError = math.matrixMultiply(

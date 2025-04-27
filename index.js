@@ -10,7 +10,7 @@ const trainingData = [
 
 // Création et entraînement du réseau
 const nn = new NeuralNetwork();
-const epochs = 10000;
+const epochs = 50000000;
 
 
 for (let i = 0; i < epochs; i++) {
