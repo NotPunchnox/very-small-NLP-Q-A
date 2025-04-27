@@ -55,8 +55,44 @@ class NeuralNetwork {
     const outputError = target - this.output[0][0];
     const outputDelta = outputError * math.sigmoidDerivative(this.output[0][0]);
 
+    // Erreur de la couche cachée
+    const hiddenError = math.matrixMultiply(
+      [[outputDelta]],
+      math.matrixTranspose(this.weightsHiddenOutput)
+    );
+    const hiddenDelta = hiddenError[0].map((val, i) => val * math.sigmoidDerivative(this.hidden[0][i]));
 
+    // Mise à jours des poids et des biais
+    // Couche cachée -> sortie
+    const hiddenOutputAdjustment = math.matrixScalarMultiply(
+      math.matrixMultiply(math.matrixTranspose(this.hidden), [[outputDelta]]),
+      this.learningRate
+    );
+    this.weightsHiddenOutput = math.matrixAdd(
+      this.weightsHiddenOutput,
+      hiddenOutputAdjustment
+    );
+    this.biasOutput = math.matrixAdd(
+      this.biasOutput,
+      math.matrixScalarMultiply([[outputDelta]], this.learningRate)
+    );
 
+    // Entrée -> couche cachée
+    const inputHiddenAdjustment = math.matrixScalarMultiply(
+      math.matrixMultiply(math.matrixTranspose(this.input), [hiddenDelta]),
+      this.learningRate
+    );
+    this.weightsInputHidden = math.matrixAdd(
+      this.weightsInputHidden,
+      inputHiddenAdjustment
+    );
+    this.biasHidden = math.matrixAdd(
+      this.biasHidden,
+      math.matrixScalarMultiply([hiddenDelta], this.learningRate)
+    );
 
   }
 }
+
+
+module.exports = NeuralNetwork;
