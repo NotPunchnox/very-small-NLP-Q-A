@@ -9,7 +9,7 @@ function sigmoidDerivative(x) {
 function matrixMultiply(a, b) {
   const rowsA = a.length;
   const colsA = a[0].length;
-  const rowsB = b.length;
+  //const rowsB = b.length;
   const colsB = b[0].length;
   const result = Array(rowsA).fill().map(() => Array(colsB).fill(0));
 
@@ -19,8 +19,9 @@ function matrixMultiply(a, b) {
         result[i][j] += a[i][k] * b[k][j];
       }
     }
-    return result;
   }
+
+  return result;
 }
 
 function matrixAdd(a, b) {

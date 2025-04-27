@@ -1,45 +1,55 @@
-//Importation des fonctions Math
 const math = require('./src/math.js');
-
-// Class du réseau de neurones
 
 class NeuralNetwork {
   constructor() {
-    // Initilisation des poids aléatoires (-1 à 1)
+    // Architecture : 2 entrées, 2 couches cachées (4 neurones chacune), 1 sortie
+    const inputSize = 2;
+    const hiddenSize1 = 4;
+    const hiddenSize2 = 4;
+    const outputSize = 1;
 
-    this.weightsInputHidden = [
-      [Math.random() * 2 - 1, Math.random() * 2 - 1],
-      [Math.random() * 2 - 1, Math.random() * 2 - 1]
-    ];
-    this.weightsHiddenOutput = [
-      [Math.random() * 2 - 1],
-      [Math.random() * 2 - 1]
-    ];
+    // Initialisation des poids avec l'initialisation Xavier
+    const xavierScale1 = Math.sqrt(2 / (inputSize + hiddenSize1));
+    const xavierScale2 = Math.sqrt(2 / (hiddenSize1 + hiddenSize2));
+    const xavierScale3 = Math.sqrt(2 / (hiddenSize2 + outputSize));
 
-    // Initilisation des biais
-    this.biasHidden = [[Math.random() * 2 - 1, Math.random() * 2 - 1]];
-    this.biasOutput = [[Math.random() * 2 - 1]];
-
-    this.learningRate = 0.001;
-
-  }
-
-
-  // Fonction de propagation avant
-  forward(inputs) {
-
-    // Couche cachée
-    this.input = [inputs];
-
-    let hiddenInput = math.matrixAdd(
-      math.matrixMultiply(this.input, this.weightsInputHidden),
-      this.biasHidden
+    this.weightsInputHidden1 = Array(inputSize).fill().map(() =>
+      Array(hiddenSize1).fill().map(() => Math.random() * 2 * xavierScale1 - xavierScale1)
+    );
+    this.weightsHidden1Hidden2 = Array(hiddenSize1).fill().map(() =>
+      Array(hiddenSize2).fill().map(() => Math.random() * 2 * xavierScale2 - xavierScale2)
+    );
+    this.weightsHidden2Output = Array(hiddenSize2).fill().map(() =>
+      Array(outputSize).fill().map(() => Math.random() * 2 * xavierScale3 - xavierScale3)
     );
 
-    this.hidden = hiddenInput.map(row => row.map(math.sigmoid));
+    // Initialisation des biais à 0 pour simplifier
+    this.biasHidden1 = [Array(hiddenSize1).fill(0)];
+    this.biasHidden2 = [Array(hiddenSize2).fill(0)];
+    this.biasOutput = [Array(outputSize).fill(0)];
 
+    this.learningRate = 0.1; // Taux d'apprentissage augmenté
+  }
+
+  forward(inputs) {
+    // Couche d'entrée vers première couche cachée
+    this.input = [inputs];
+    let hiddenInput1 = math.matrixAdd(
+      math.matrixMultiply(this.input, this.weightsInputHidden1),
+      this.biasHidden1
+    );
+    this.hidden1 = hiddenInput1.map(row => row.map(math.sigmoid));
+
+    // Première couche cachée vers deuxième couche cachée
+    let hiddenInput2 = math.matrixAdd(
+      math.matrixMultiply(this.hidden1, this.weightsHidden1Hidden2),
+      this.biasHidden2
+    );
+    this.hidden2 = hiddenInput2.map(row => row.map(math.sigmoid));
+
+    // Deuxième couche cachée vers sortie
     let outputInput = math.matrixAdd(
-      math.matrixMultiply(this.hidden, this.weightsInputHidden),
+      math.matrixMultiply(this.hidden2, this.weightsHidden2Output),
       this.biasOutput
     );
     this.output = outputInput.map(row => row.map(math.sigmoid));
@@ -47,56 +57,80 @@ class NeuralNetwork {
     return this.output[0][0];
   }
 
-
   train(inputs, target) {
-
     // Propagation avant
     this.forward(inputs);
+
+    // Calcul de la perte (erreur quadratique moyenne)
+    const loss = 0.5 * Math.pow(target - this.output[0][0], 2);
 
     // Erreur de sortie
     const outputError = target - this.output[0][0];
     const outputDelta = outputError * math.sigmoidDerivative(this.output[0][0]);
 
-    console.log({ outputError, outputDelta })
-
-    // Erreur de la couche cachée
-    const hiddenError = math.matrixMultiply(
+    // Erreur de la deuxième couche cachée
+    const hiddenError2 = math.matrixMultiply(
       [[outputDelta]],
-      math.matrixTranspose(this.weightsHiddenOutput)
+      math.matrixTranspose(this.weightsHidden2Output)
     );
-    const hiddenDelta = hiddenError[0].map((val, i) => val * math.sigmoidDerivative(this.hidden[0][i]));
+    const hiddenDelta2 = hiddenError2[0].map((val, i) =>
+      val * math.sigmoidDerivative(this.hidden2[0][i])
+    );
 
-    // Mise à jours des poids et des biais
-    // Couche cachée -> sortie
-    const hiddenOutputAdjustment = math.matrixScalarMultiply(
-      math.matrixMultiply(math.matrixTranspose(this.hidden), [[outputDelta]]),
+    // Erreur de la première couche cachée
+    const hiddenError1 = math.matrixMultiply(
+      [hiddenDelta2],
+      math.matrixTranspose(this.weightsHidden1Hidden2)
+    );
+    const hiddenDelta1 = hiddenError1[0].map((val, i) =>
+      val * math.sigmoidDerivative(this.hidden1[0][i])
+    );
+
+    // Mise à jour des poids et biais
+    // Deuxième couche cachée -> sortie
+    const hidden2OutputAdjustment = math.matrixScalarMultiply(
+      math.matrixMultiply(math.matrixTranspose(this.hidden2), [[outputDelta]]),
       this.learningRate
     );
-    this.weightsHiddenOutput = math.matrixAdd(
-      this.weightsHiddenOutput,
-      hiddenOutputAdjustment
+    this.weightsHidden2Output = math.matrixAdd(
+      this.weightsHidden2Output,
+      hidden2OutputAdjustment
     );
     this.biasOutput = math.matrixAdd(
       this.biasOutput,
       math.matrixScalarMultiply([[outputDelta]], this.learningRate)
     );
 
-    // Entrée -> couche cachée
-    const inputHiddenAdjustment = math.matrixScalarMultiply(
-      math.matrixMultiply(math.matrixTranspose(this.input), [hiddenDelta]),
+    // Première couche cachée -> deuxième couche cachée
+    const hidden1Hidden2Adjustment = math.matrixScalarMultiply(
+      math.matrixMultiply(math.matrixTranspose(this.hidden1), [hiddenDelta2]),
       this.learningRate
     );
-    this.weightsInputHidden = math.matrixAdd(
-      this.weightsInputHidden,
-      inputHiddenAdjustment
+    this.weightsHidden1Hidden2 = math.matrixAdd(
+      this.weightsHidden1Hidden2,
+      hidden1Hidden2Adjustment
     );
-    this.biasHidden = math.matrixAdd(
-      this.biasHidden,
-      math.matrixScalarMultiply([hiddenDelta], this.learningRate)
+    this.biasHidden2 = math.matrixAdd(
+      this.biasHidden2,
+      math.matrixScalarMultiply([hiddenDelta2], this.learningRate)
     );
 
+    // Entrée -> première couche cachée
+    const inputHidden1Adjustment = math.matrixScalarMultiply(
+      math.matrixMultiply(math.matrixTranspose(this.input), [hiddenDelta1]),
+      this.learningRate
+    );
+    this.weightsInputHidden1 = math.matrixAdd(
+      this.weightsInputHidden1,
+      inputHidden1Adjustment
+    );
+    this.biasHidden1 = math.matrixAdd(
+      this.biasHidden1,
+      math.matrixScalarMultiply([hiddenDelta1], this.learningRate)
+    );
+
+    return loss;
   }
 }
-
 
 module.exports = NeuralNetwork;
