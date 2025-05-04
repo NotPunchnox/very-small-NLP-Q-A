@@ -1,35 +1,61 @@
+// index.js
 const NeuralNetwork = require('./neural-network');
-const Tokenizer = require('./src/tokenizer.js');
 
-// Créer et initialiser le tokenizer
-const tokenizer = new Tokenizer();
-tokenizer.init();
+// Supposons que vous avez une fonction tokenizer
+const tokenizer = {
+  encode: (text) => {
+    // Exemple simplifié : convertir le texte en tokens
+    return text.toLowerCase().split(' ').map(word => word.charCodeAt(0) % 100);
+  },
+  decode: (tokens) => {
+    // Exemple simplifié : convertir les tokens en texte
+    return tokens.map(token => String.fromCharCode(token + 32)).join('');
+  },
+  vocabSize: 100 // Taille du vocabulaire (à ajuster selon votre tokenizer)
+};
 
-// Créer et initialiser le réseau neuronal
-const nn = new NeuralNetwork();
+// Exemple de données Q&A
 const trainingData = [
-  { inputs: [1, 2], target: 0.3 },
-  { inputs: [2, 3], target: 0.4 },
-  { inputs: [4, 5], target: 0.6 },
-  { inputs: [6, 7], target: 0.8 }
+  {
+    question: "What is the capital of France?",
+    answer: "The capital of France is Paris."
+  },
+  {
+    question: "Who wrote Romeo and Juliet?",
+    answer: "Romeo and Juliet was written by William Shakespeare."
+  }
 ];
 
-// Entrainer le réseau de neurones
-for (let epoch = 0; epoch < 1000000; epoch++) {
+// Convertir les données en tokens
+const tokenizedData = trainingData.map(({ question, answer }) => ({
+  questionTokens: tokenizer.encode(question),
+  answerTokens: tokenizer.encode(answer)
+}));
+
+// Créer le réseau
+const maxSeqLength = Math.max(
+  ...tokenizedData.map(data => data.questionTokens.length + data.answerTokens.length)
+);
+const nn = new NeuralNetwork(tokenizer.vocabSize, maxSeqLength);
+
+// Entraînement
+const epochs = 1000;
+for (let i = 0; i < epochs; i++) {
   let totalLoss = 0;
-  for (let data of trainingData) {
-    totalLoss += nn.train(data.inputs, data.target);
+  for (const data of tokenizedData) {
+    totalLoss += nn.train(data.questionTokens, data.answerTokens);
   }
-  const averageLoss = totalLoss / trainingData.length;
-  if (epoch % 1000 === 0) {
-    console.log(`Epoch ${epoch}, Average Loss: ${averageLoss}`);
+  if (i % 100 === 0) {
+    console.log(`Epoch ${i}, Average Loss: ${(totalLoss / tokenizedData.length).toFixed(6)}`);
   }
 }
 
-
-
-// Inférence/test du réseau neuronal après l'entrainement
-for (const data of trainingData) {
-  let output = nn.forward(data.inputs);
-  console.log(`Inputs: ${data.inputs} | result: ${output} | Attendu: ${data.target}`);
+// Test de génération
+console.log("Test Q&A:");
+for (const { question } of trainingData) {
+  const questionTokens = tokenizer.encode(question);
+  const responseTokens = nn.generate(questionTokens);
+  const response = tokenizer.decode(responseTokens);
+  console.log(`Question: ${question}`);
+  console.log(`Réponse: ${response}`);
 }
