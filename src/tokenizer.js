@@ -66,4 +66,4 @@ class Tokenizer {
   }
 }
 
-module.exports = { Tokenizer };
+module.exports = Tokenizer;

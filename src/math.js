@@ -1,3 +1,4 @@
+// src/math.js
 function sigmoid(x) {
   return 1 / (1 + Math.exp(-x));
 }
@@ -9,7 +10,6 @@ function sigmoidDerivative(x) {
 function matrixMultiply(a, b) {
   const rowsA = a.length;
   const colsA = a[0].length;
-  //const rowsB = b.length;
   const colsB = b[0].length;
   const result = Array(rowsA).fill().map(() => Array(colsB).fill(0));
 
@@ -20,7 +20,6 @@ function matrixMultiply(a, b) {
       }
     }
   }
-
   return result;
 }
 
@@ -36,6 +35,15 @@ function matrixTranspose(matrix) {
   return matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]));
 }
 
+// Entropie croisée pour la perte
+function crossEntropyLoss(predictions, target) {
+  const epsilon = 1e-10;
+  let loss = 0;
+  for (let i = 0; i < predictions.length; i++) {
+    loss -= target[i] * Math.log(predictions[i] + epsilon);
+  }
+  return loss / predictions.length;
+}
 
 module.exports = {
   sigmoid,
@@ -43,5 +51,6 @@ module.exports = {
   matrixMultiply,
   matrixAdd,
   matrixScalarMultiply,
-  matrixTranspose
-}
+  matrixTranspose,
+  crossEntropyLoss
+};
