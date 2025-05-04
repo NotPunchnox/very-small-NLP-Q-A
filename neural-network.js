@@ -1,135 +1,187 @@
+// neural-network.js
 const math = require('./src/math.js');
 
 class NeuralNetwork {
-  constructor() {
-    // Architecture : 2 entrées, 2 couches cachées (4 neurones chacune), 1 sortie
-    const inputSize = 2;
-    const hiddenSize1 = 4;
-    const hiddenSize2 = 4;
-    const outputSize = 1;
+  constructor(vocabSize, maxSeqLength, embeddingDim = 64, hiddenSize = 128) {
+    this.vocabSize = vocabSize;
+    this.maxSeqLength = maxSeqLength;
+    this.embeddingDim = embeddingDim;
+    this.hiddenSize = hiddenSize;
 
-    // Initialisation des poids avec l'initialisation Xavier
-    const xavierScale1 = Math.sqrt(2 / (inputSize + hiddenSize1));
-    const xavierScale2 = Math.sqrt(2 / (hiddenSize1 + hiddenSize2));
-    const xavierScale3 = Math.sqrt(2 / (hiddenSize2 + outputSize));
+    // Initialisation des poids avec Xavier
+    const xavierScale1 = Math.sqrt(2 / (vocabSize + embeddingDim));
+    const xavierScale2 = Math.sqrt(2 / (embeddingDim * maxSeqLength + hiddenSize));
+    const xavierScale3 = Math.sqrt(2 / (hiddenSize + vocabSize));
 
-    this.weightsInputHidden1 = Array(inputSize).fill().map(() =>
-      Array(hiddenSize1).fill().map(() => Math.random() * 2 * xavierScale1 - xavierScale1)
-    );
-    this.weightsHidden1Hidden2 = Array(hiddenSize1).fill().map(() =>
-      Array(hiddenSize2).fill().map(() => Math.random() * 2 * xavierScale2 - xavierScale2)
-    );
-    this.weightsHidden2Output = Array(hiddenSize2).fill().map(() =>
-      Array(outputSize).fill().map(() => Math.random() * 2 * xavierScale3 - xavierScale3)
+    // Embedding : vocabSize -> embeddingDim
+    this.embedding = Array(vocabSize).fill().map(() =>
+      Array(embeddingDim).fill().map(() => Math.random() * 2 * xavierScale1 - xavierScale1)
     );
 
-    // Initialisation des biais à 0 pour simplifier
-    this.biasHidden1 = [Array(hiddenSize1).fill(0)];
-    this.biasHidden2 = [Array(hiddenSize2).fill(0)];
-    this.biasOutput = [Array(outputSize).fill(0)];
+    // Couche cachée : (maxSeqLength * embeddingDim) -> hiddenSize
+    this.weightsInputHidden = Array(maxSeqLength * embeddingDim).fill().map(() =>
+      Array(hiddenSize).fill().map(() => Math.random() * 2 * xavierScale2 - xavierScale2)
+    );
+    this.biasHidden = [Array(hiddenSize).fill(0)];
 
-    this.learningRate = 0.1; // Taux d'apprentissage augmenté
+    // Couche de sortie : hiddenSize -> vocabSize
+    this.weightsHiddenOutput = Array(hiddenSize).fill().map(() =>
+      Array(vocabSize).fill().map(() => Math.random() * 2 * xavierScale3 - xavierScale3)
+    );
+    this.biasOutput = [Array(vocabSize).fill(0)];
+
+    this.learningRate = 0.01;
   }
 
-  forward(inputs) {
-    // Couche d'entrée vers première couche cachée
-    this.input = [inputs];
-    let hiddenInput1 = math.matrixAdd(
-      math.matrixMultiply(this.input, this.weightsInputHidden1),
-      this.biasHidden1
-    );
-    this.hidden1 = hiddenInput1.map(row => row.map(math.sigmoid));
+  // Convertir une séquence de tokens en embeddings
+  tokensToEmbedding(tokens) {
+    const padded = [...tokens];
+    while (padded.length < this.maxSeqLength) {
+      // 0 == token <pad>
+      padded.push(0);
+    }
 
-    // Première couche cachée vers deuxième couche cachée
-    let hiddenInput2 = math.matrixAdd(
-      math.matrixMultiply(this.hidden1, this.weightsHidden1Hidden2),
-      this.biasHidden2
-    );
-    this.hidden2 = hiddenInput2.map(row => row.map(math.sigmoid));
+    if (padded.length > this.maxSeqLength) {
+      padded.length = this.maxSeqLength;
+    }
 
-    // Deuxième couche cachée vers sortie
+    // Convertir chaque token en embedding
+    const embedding = padded.map(token => this.embedding[token] || Array(this.embeddingDim).fill(0));
+    // Aplatir en un vecteur 1D
+    return embedding.flat();
+  }
+
+  // Propagation avant : prend une séquence de tokens et retourne une distribution sur le vocabulaire
+  forward(tokens) {
+    // Convertir les tokens en embeddings
+    this.input = [this.tokensToEmbedding(tokens)];
+
+    // Couche cachée
+    let hiddenInput = math.matrixAdd(
+      math.matrixMultiply(this.input, this.weightsInputHidden),
+      this.biasHidden
+    );
+    this.hidden = hiddenInput.map(row => row.map(math.sigmoid));
+
+    // Couche de sortie (distribution sur le vocabulaire)
     let outputInput = math.matrixAdd(
-      math.matrixMultiply(this.hidden2, this.weightsHidden2Output),
+      math.matrixMultiply(this.hidden, this.weightsHiddenOutput),
       this.biasOutput
     );
-    this.output = outputInput.map(row => row.map(math.sigmoid));
+    // Appliquer softmax pour obtenir des probabilités
+    this.output = outputInput.map(row => {
+      const expSum = row.reduce((sum, val) => sum + Math.exp(val), 0);
+      return row.map(val => Math.exp(val) / expSum);
+    });
 
-    return this.output[0][0];
+    // Distribution sur le vocabulaire
+    return this.output[0];
   }
 
-  train(inputs, target) {
-    // Propagation avant
-    this.forward(inputs);
+  // Entraînement : prend une question et une réponse tokenisées
+  train(questionTokens, answerTokens) {
+    let totalLoss = 0;
+    const context = [...questionTokens];
 
-    // Calcul de la perte (erreur quadratique moyenne)
-    const loss = 0.5 * Math.pow(target - this.output[0][0], 2);
+    // Générer chaque token de la réponse
+    for (let i = 0; i < answerTokens.length; i++) {
+      // Propagation avant avec le contexte actuel
+      const outputProbs = this.forward(context);
 
-    // Erreur de sortie
-    const outputError = target - this.output[0][0];
-    const outputDelta = outputError * math.sigmoidDerivative(this.output[0][0]);
+      // Calcul de la perte (entropie croisée)
+      const target = Array(this.vocabSize).fill(0);
+      target[answerTokens[i]] = 1;
+      const loss = math.crossEntropyLoss(outputProbs, target);
+      totalLoss += loss;
 
-    // Erreur de la deuxième couche cachée
-    const hiddenError2 = math.matrixMultiply(
-      [[outputDelta]],
-      math.matrixTranspose(this.weightsHidden2Output)
-    );
-    const hiddenDelta2 = hiddenError2[0].map((val, i) =>
-      val * math.sigmoidDerivative(this.hidden2[0][i])
-    );
+      // Calcul des gradients
+      const outputError = outputProbs.map((prob, j) => prob - target[j]);
+      const outputDelta = outputError.map((err, j) =>
+        err * math.sigmoidDerivative(outputProbs[j])
+      );
 
-    // Erreur de la première couche cachée
-    const hiddenError1 = math.matrixMultiply(
-      [hiddenDelta2],
-      math.matrixTranspose(this.weightsHidden1Hidden2)
-    );
-    const hiddenDelta1 = hiddenError1[0].map((val, i) =>
-      val * math.sigmoidDerivative(this.hidden1[0][i])
-    );
+      // Erreur de la couche cachée
+      const hiddenError = math.matrixMultiply(
+        [outputDelta],
+        math.matrixTranspose(this.weightsHiddenOutput)
+      );
+      const hiddenDelta = hiddenError[0].map((val, j) =>
+        val * math.sigmoidDerivative(this.hidden[0][j])
+      );
 
-    // Mise à jour des poids et biais
-    // Deuxième couche cachée -> sortie
-    const hidden2OutputAdjustment = math.matrixScalarMultiply(
-      math.matrixMultiply(math.matrixTranspose(this.hidden2), [[outputDelta]]),
-      this.learningRate
-    );
-    this.weightsHidden2Output = math.matrixAdd(
-      this.weightsHidden2Output,
-      hidden2OutputAdjustment
-    );
-    this.biasOutput = math.matrixAdd(
-      this.biasOutput,
-      math.matrixScalarMultiply([[outputDelta]], this.learningRate)
-    );
+      // Mise à jour des poids et biais
+      // Couche cachée -> sortie
+      const hiddenOutputAdjustment = math.matrixScalarMultiply(
+        math.matrixMultiply(math.matrixTranspose(this.hidden), [outputDelta]),
+        this.learningRate
+      );
+      this.weightsHiddenOutput = math.matrixAdd(
+        this.weightsHiddenOutput,
+        hiddenOutputAdjustment
+      );
+      this.biasOutput = math.matrixAdd(
+        this.biasOutput,
+        math.matrixScalarMultiply([outputDelta], this.learningRate)
+      );
 
-    // Première couche cachée -> deuxième couche cachée
-    const hidden1Hidden2Adjustment = math.matrixScalarMultiply(
-      math.matrixMultiply(math.matrixTranspose(this.hidden1), [hiddenDelta2]),
-      this.learningRate
-    );
-    this.weightsHidden1Hidden2 = math.matrixAdd(
-      this.weightsHidden1Hidden2,
-      hidden1Hidden2Adjustment
-    );
-    this.biasHidden2 = math.matrixAdd(
-      this.biasHidden2,
-      math.matrixScalarMultiply([hiddenDelta2], this.learningRate)
-    );
+      // Couche d'entrée -> cachée
+      const inputHiddenAdjustment = math.matrixScalarMultiply(
+        math.matrixMultiply(math.matrixTranspose(this.input), [hiddenDelta]),
+        this.learningRate
+      );
+      this.weightsInputHidden = math.matrixAdd(
+        this.weightsInputHidden,
+        inputHiddenAdjustment
+      );
+      this.biasHidden = math.matrixAdd(
+        this.biasHidden,
+        math.matrixScalarMultiply([hiddenDelta], this.learningRate)
+      );
 
-    // Entrée -> première couche cachée
-    const inputHidden1Adjustment = math.matrixScalarMultiply(
-      math.matrixMultiply(math.matrixTranspose(this.input), [hiddenDelta1]),
-      this.learningRate
-    );
-    this.weightsInputHidden1 = math.matrixAdd(
-      this.weightsInputHidden1,
-      inputHidden1Adjustment
-    );
-    this.biasHidden1 = math.matrixAdd(
-      this.biasHidden1,
-      math.matrixScalarMultiply([hiddenDelta1], this.learningRate)
-    );
+      // Mise à jour des embeddings
+      const inputFlat = this.input[0];
+      for (let t = 0; t < Math.min(context.length, this.maxSeqLength); t++) {
+        if (context[t] === 0) continue; // Ignorer le padding
+        const embeddingGrad = Array(this.embeddingDim).fill(0);
+        for (let j = 0; j < this.hiddenSize; j++) {
+          for (let k = 0; k < this.embeddingDim; k++) {
+            embeddingGrad[k] += hiddenDelta[j] * this.weightsInputHidden[t * this.embeddingDim + k][j];
+          }
+        }
+        for (let k = 0; k < this.embeddingDim; k++) {
+          this.embedding[context[t]][k] -= this.learningRate * embeddingGrad[k];
+        }
+      }
 
-    return loss;
+      // Ajouter le token cible au contexte pour la prochaine itération
+      context.push(answerTokens[i]);
+    }
+
+    return totalLoss / answerTokens.length;
+  }
+
+  // Génération : générer une réponse à partir d'une question
+  generate(questionTokens, maxLength = 50) {
+    const context = [...questionTokens];
+    const response = [];
+
+    for (let i = 0; i < maxLength; i++) {
+      const outputProbs = this.forward(context);
+      // Choisir le token avec la plus haute probabilité
+      const nextToken = outputProbs.indexOf(Math.max(...outputProbs));
+
+      // 0 == EOS ( end of sequence )
+      if (nextToken === 0) break;
+      response.push(nextToken);
+      context.push(nextToken);
+
+      if (context.length > this.maxSeqLength) {
+        // Maintenir la longueur maximale
+        context.shift();
+      }
+    }
+
+    return response;
   }
 }
 
